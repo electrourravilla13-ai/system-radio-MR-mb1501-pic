@@ -1,0 +1,93 @@
+'****************************************************************
+'*  Name    : LIB_REYLEC_ROTARY_ADC.PBP                         *
+'*  Author  : [select VIEW...EDITOR OPTIONS]                    *
+'*  Notice  : Copyright (c) 2025 [select VIEW...EDITOR OPTIONS] *
+'*          : All Rights Reserved                               *
+'*  Date    : 23-02-2025                                        *
+'*  Version : 1.0                                               *
+'*  Notes   :                                                   *
+'*          :                                                   *   
+'****************************************************************
+
+'********************************PINES Y DATOS REQUERIDOS************************************ 
+'                                                                                           '    																						'
+'ROTARY_IN  BIT DE REGISTRO TRIS CONFIG. PIN DE ENTRADA...EJEMPLO:(ROTARY_IN VAR PORTA.1)   '
+'ROTARY_AD  BIT DE REGISTRO ANSEL CONFIGURACION PIN ADC...EJEMPLO:(ROTARY_AD VAR ANSELA.2)  '
+'IN_ADC    IN ADC PARA EL COMANDO "ADCIN" PBP..EJEMPLO:(IN_ADC = 2 PARA > ADCIN IN_ADC,BOTON)'
+'                                                                                           '
+'-------------------------------------------------------------------------------------------'
+'                                                                                           '
+'BOTON_A  VARIABLE INDICADOR PARA BOTON A...PARA RENOMBRAR...EJEMPLO:(MAS VAR BOTON_A)      '
+'BOTON_B  VARIABLE INDICADOR PARA BOTON B...PARA RENOMBRAR...EJEMPLO:(MENOS VAR BOTON_B)    '
+'BOTON_C  VARIABLE INDICADOR PARA BOTON C...PARA RENOMBRAR...EJEMPLO:(ACEPTAR VAR BOTON_C)  '
+'                                                                                           '
+'********************************************************************************************
+BOTON       VAR WORD   'VARIABLE PARA DATOS ADC ADRESL Y ADRESH 0 - 1023 
+BOTON_A     VAR BIT    'VARIABLE INDICADOR PARA BOTON A
+BOTON_B     VAR BIT    'VARIABLE INDICADOR PARA BOTON B 
+BOTON_C     VAR BIT    'VARIABLE INDICADOR PARA BOTON C
+FT          VAR WORD[5]'VARIABLE FACTOR DE LECTURAS ADC DE ROTARY
+IFT         VAR BYTE   'VARIABLE INDICE PARA FACTOR DE LECTURAS ADC DE ROTARY
+REF_BOTON_A CON 240'175'300'175    'VARIABLE REFERENCIAL VALOR ADC PARA BOTON A
+REF_BOTON_B CON 820'783'670'612'783    'VARIABLE REFERENCIAL VALOR ADC PARA BOTON B   
+REF_BOTON_C CON 611'554'173'554    'VARIABLE REFERENCIAL VALOR ADC PARA BOTON C   
+REF_ADC     CON 50     'VALOR UMBRAL ADC
+
+GOTO SALIDA
+
+
+USERCOMMAND "ROTARY"
+ROTARY_: 
+
+BOTON_A = 0     : BOTON_B = 0   : BOTON_C = 0  
+
+ADCIN IN_ADC,BOTON   
+
+IF BOTON < 1000 THEN  
+
+FOR IFT = 0 TO 5 STEP 1 
+WHILE BOTON => 1000      
+ADCIN IN_ADC,BOTON 
+WEND   
+FT[IFT]= BOTON
+NEXT IFT               
+
+BOTON= FT[0]+FT[1]+FT[2]+FT[3]+FT[4]+FT[5] : BOTON = BOTON / 6  
+
+IF BOTON > REF_BOTON_A - REF_ADC  AND BOTON < REF_BOTON_A + REF_ADC THEN BOTON_A = 1 : RETURN
+IF BOTON > REF_BOTON_B - REF_ADC  AND BOTON < REF_BOTON_B + REF_ADC THEN BOTON_B = 1 : RETURN 
+IF BOTON > REF_BOTON_C - REF_ADC  AND BOTON < REF_BOTON_C + REF_ADC THEN BOTON_C = 1 : RETURN 
+
+ENDIF
+
+  
+
+RETURN   
+
+ASM                             
+ROTARY?  macro
+    L?CALL _ROTARY_         
+  endm
+ENDASM
+
+
+
+USERCOMMAND "ANTI_REBOTE"
+ANTI_REBOTE_: 
+
+ROTARY
+while BOTON_A = 1 or BOTON_B = 1 or BOTON_C = 1
+ROTARY   
+wend  
+ 
+RETURN
+
+ASM                             
+ANTI_REBOTE?  macro
+    L?CALL _ANTI_REBOTE_         
+  endm
+ENDASM
+
+SALIDA:
+
+

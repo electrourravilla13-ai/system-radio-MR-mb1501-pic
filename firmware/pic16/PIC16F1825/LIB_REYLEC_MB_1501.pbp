@@ -1,0 +1,72 @@
+'****************************************************************
+'*  Name    : LIB_REYLEC_MB_1501.BAS                            *
+'*  Author  : [select VIEW...EDITOR OPTIONS]                    *
+'*  Notice  : Copyright (c) 2025 [select VIEW...EDITOR OPTIONS] *
+'*          : All Rights Reserved                               *
+'*  Date    : 23-02-2025                                        *
+'*  Version : 1.0                                               *
+'*  Notes   :                                                   *
+'*          :                                                   *
+'**************************************************************** 
+;CRISTALES DE PASO PARA EL MB1501...OK                          *
+;EL VALOR 512 ES UN CRISTAL DE 6,4 MHZ                          *
+;EL VALOR 640 ES UN CRISTAL DE 8MHZ                             *
+;EL VALOR 320 ES UN CRISTAL DE 4 MHZ                            *
+;EL VALOR 480 ES UN CRISTAL DE 6 MHZ                            *   
+'****************************************************************
+
+'********************************PINES Y DATOS REQUERIDOS************************************
+'     																						'
+'DATA_MB   PIN DE DATOS MB1501                                                              '
+'CLOCK_MB  PIN DE RELOJ MB1501                                                              '
+'ENABLE_MB PIN DE HABILITACION MB1501                                                       ' 
+'-------------------------------------------------------------------------------------------'
+'FRECUENCIA  FRECUENCIA EN MHZ. Ejemplo:(875-3809) Seria 87.5 a 380.9                                               '
+                                             '
+'OSC_MB   OSCILADOR DE REFERENCIA PARA PASOS DEL MB. Ejemplo:(480 PARA UN CRISTAL DE 6 MHZ) '
+'                                                                                           '
+'********************************************************************************************
+REGISTRO_A        var BYTE    
+REGISTRO_N	      VAR WORD    
+DUMMY             VAR WORD    
+FRECUENCIA        VAR WORD
+BIT_C             VAR BIT
+BIT_SW            CON 1 
+GOTO FIN 
+'********************************************************************************************
+'********************************************************************************************
+USERCOMMAND "CONFIGURA_MB"        
+CONFIGURA_MB_: 
+'********************************************************************************************
+'********************************************************************************************
+DUMMY = FRECUENCIA * 100
+FRECUENCIA = DIV32 25 : FRECUENCIA = FRECUENCIA * 2  
+'********************************************************************************************
+'********************************************************************************************
+REGISTRO_A = FRECUENCIA : REGISTRO_A.6 = 0 
+REGISTRO_N = FRECUENCIA >> 6 
+'********************************************************************************************
+'********************************************************************************************
+BIT_C = 0 
+Low ENABLE_MB 
+SHIFTOUT DATA_MB,CLOCK_MB,1,[REGISTRO_N\11,_
+							 REGISTRO_A\7,_          
+							 bIT_C\1]
+High ENABLE_MB                   
+'********************************************************************************************
+BIT_C = 1 
+Low  ENABLE_MB
+SHIFTOUT DATA_MB,CLOCK_MB,1,[BIT_SW\1,_
+						     OSC_MB\14,_
+						     BIT_C\1] 
+High ENABLE_MB
+'********************************************************************************************
+'********************************************************************************************
+RETURN
+ASM                             
+CONFIGURA_MB?  macro
+    L?CALL _CONFIGURA_MB_         
+  endm
+ENDASM
+               
+FIN:

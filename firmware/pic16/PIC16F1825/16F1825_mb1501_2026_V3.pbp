@@ -1,0 +1,992 @@
+#CONFIG
+ __CONFIG _CONFIG1, _FOSC_INTOSC & _WDTE_OFF & _PWRTE_OFF & _MCLRE_OFF & _CP_OFF & _CPD_OFF & _BOREN_OFF & _CLKOUTEN_OFF & _IESO_OFF & _FCMEN_OFF
+ __CONFIG _CONFIG2, _WRT_OFF & _PLLEN_ON & _STVREN_OFF & _LVP_OFF 
+#ENDCONFIG
+@ ERRORLEVEL -306                
+define OSC 32 
+OSCCON     = %11110000 
+'*******************************************************************************************************
+TRISA	   = %00000010 
+PORTA 	   = %00010000 
+LATA       = %00010000
+ANSELA     = %00000010
+WPUA       = %00000000 
+MDCON      = %00000000 
+'******************************************************************************************************* 
+TRISC	   = %00000011 
+PORTC 	   = %00000000 
+LATC       = %00000000 
+ANSELC     = %00000011 
+WPUA       = %00000000 
+'******************************************************************************************************* 
+OPTION_REG = %00000000
+ADCON0     = %00000000 
+ADCON1     = %11110000
+CM1CON0    = %00000000 
+CM1CON1    = %00000000
+CM2CON0    = %00000000
+CM2CON1    = %00000000
+'*******************************************************************************************************
+  
+'*******************************************************************************************************
+
+POTENCIA_OUT   VAR PORTA.0
+ROE_IN         VAR PORTA.1
+CLOCK_MB       VAR PORTA.2
+ENABLE_MB      VAR PORTA.4
+DATA_MB        VAR PORTA.5
+
+TECLADO_IN     VAR PORTC.0  
+POTENCIA_IN    VAR PORTC.1
+BUZZER         VAR PORTC.2 
+TEMPERATURA_IN VAR PORTC.3
+SCL            VAR PORTC.4 
+SDA            VAR PORTC.5  
+
+SYMBOL SONIDO_IN  =  TEMPERATURA_IN
+'******************************************************************************************************* 
+
+
+'*******************************************************************************************************
+'*******************************************************************************************************
+'*******************************************************************************************************
+DIRECCION_PCF  CON $4F  
+INCLUDE "REYELECTRONICA_LCD_I2C_V2.pbp"
+OSC_MB CON 640
+INCLUDE "LIB_REYLEC_MB_1501.PBP" 
+SYMBOL ROTARY_IN = TRISC.0
+SYMBOL ROTARY_AD = ANSELC.0
+ROTARY_IN = 1 : ROTARY_AD = 1
+IN_ADC CON 4
+INCLUDE "LIB_REYLEC_ROTARY_ADC.PBP"  
+SYMBOL MAS       =  BOTON_A 
+SYMBOL MENOS     =  BOTON_B 
+SYMBOL ACEPTAR   =  BOTON_C  
+'*******************************************************************************************************
+DEFINE  ADC_BITS       10    	
+DEFINE  ADC_CLOCK      3  	
+DEFINE  ADC_SAMPLEUS   50 
+'*******************************************************************************************************
+'*******************************************************************************************************
+ROE                   VAR WORD
+PWO                   VAR WORD
+POTENCIA_DAC          VAR WORD 
+TEMPERATURA           VAR BYTE
+ALERTA_TEMPERATURA    VAR BYTE 
+ALERTA_ROE            VAR BYTE 
+POTENCIA              var BYTE 
+CAL_POT               VAR BIT  
+'*******************************************************************************************************
+'*******************************************************************************************************
+'*******************************************************************************************************
+FRECUENCIA_Ini_LCD    CON 128'148'128
+FRECUENCIA_IniSeg     CON 144   'DIRECCION DE SEG EN LA LCD
+FRECUENCIA_MAX        CON 1080  'CONTANSTE DE REFERENCIA MAXIMO
+FRECUENCIA_MIN        CON 870    'CONTANSTE DE REFERENCIA MAXIMO
+FRECUENCIA_PASO       CON 1     'CONTANSTE DE REFERENCIA PASO
+REF_CICLO_FRECCUENCIA CON 0      'CONTANSTE DE REFERENCIA CICLO
+'******************************************************************************************************* 
+TEMPERATURA_Ini_LCD   CON 192
+TEMPERATURA_IniSeg    CON 207    'DIRECCION DE SEG EN LA LCD
+TEMPERATURA_MAX       CON 80
+TEMPERATURA_MIN       CON 0  
+TEMPERATURA_PASO      CON 5
+REF_CICLO_TEMPERATURA CON 1  
+'******************************************************************************************************* 
+ROE_Ini_LCD           CON 160'148
+ROE_IniSeg            CON 166'155   'DIRECCION DE SEG EN LA LCD
+ROE_MAX               CON 25
+ROE_MIN               CON 0               '
+ROE_PASO              CON 2
+REF_CICLO_ROE         CON 0   
+'******************************************************************************************************* 
+POTENCIA_IniSeg       CON 226    'DIRECCION DE SEG EN LA LCD
+POTENCIA_MAX          CON 100
+POTENCIA_MIN          CON 0 
+POTENCIA_PASO         CON 2
+REF_CICLO_POTENCIA    CON 1
+'*******************************************************************************************************
+PWO_Ini_LCD           CON 148
+PWO_IniSeg            CON 156   'DIRECCION DE SEG EN LA LCD   
+'*******************************************************************************************************
+ACEPTAR_IniSeg        CON 224    'DIRECCION DE SEG EN LA LCD
+SELECTOR_IniSeg_MAX   CON 3 
+SELECTOR_IniSeg_MIN   CON 0
+SELECTOR_IniSeg_PASO  CON 1
+REF_CICLO_SELECTOR    CON 1  
+'*******************************************************************************************************
+REF_DATO             VAR WORD
+EX_REF_DATA          VAR WORD
+EX_RTP               VAR WORD 
+REF_MAX              VAR WORD
+REF_MIN              VAR WORD
+REF_PASO             VAR BYTE 
+A                    var byte
+REF_CICLO            VAR BIT 
+'******************************************************************************************************* 
+T_PULSA              VAR WORD
+SELECTOR_IniSeg      VAR BYTE  
+EX_SELECTOR_IniSeg   VAR BYTE
+POSICION_CURSOR      VAR BYTE 
+MUEVE_CURSOR         VAR BYTE    
+'*******************************************************************************************************
+'*******************************************************************************************************
+'*******************************************************************************************************  
+TONO               VAR BYTE
+AUXTONO            VAR word
+CONTADOR           VAR word
+DDRAM              VAR BYTE
+F                  VAR BYTE 'CARACTER
+DATO_ACTUAL        VAR WORD 
+'*******************************************************************************************************
+'*******************************************************************************************************
+'*******************************************************************************************************
+ROE                = 1
+POTENCIA_DAC       = 0
+TEMPERATURA        = 1
+SELECTOR_IniSeg    = SELECTOR_IniSeg_MAX 
+REF_MAX            = SELECTOR_IniSeg
+REF_MIN            = SELECTOR_IniSeg_MIN
+REF_DATO           = 0
+REF_PASO           = 1  
+ALERTA_ROE         = 0
+ALERTA_TEMPERATURA = 0  
+'*******************************************************************************************************
+'*******************************************************************************************************
+'*******************************************************************************************************  
+'*******************************************************************************************************
+'*******************************************************************************************************
+'*******************************************************************************************************
+'pause 1000
+INICIO: 
+
+
+
+'for temperatura = 0 to 100 step 1
+'TEMPERATURA_IN = 0 
+'pause 500
+'TEMPERATURA_IN = 1
+'pause 500
+'next
+'end
+''''''''''''''''''''goto LEE_ADC
+'ARRAYWRITE LCDOUT2,_
+'[$FE,1]
+'PROCESA_LCDOUT2
+'PAUSE 100
+
+'ARRAYWRITE LCDOUT2,[$FE,$40,$00,$03,$0E,$08,$18,$11,$11,$13]:PROCESA_LCDOUT2
+'ARRAYWRITE LCDOUT2,[$FE,$48,$00,$1F,$03,$1E,$10,$01,$03,$06]:PROCESA_LCDOUT2
+'ARRAYWRITE LCDOUT2,[$FE,$50,$00,$1F,$10,$1C,$1C,$17,$04,$05]:PROCESA_LCDOUT2
+'ARRAYWRITE LCDOUT2,[$FE,$58,$00,$00,$1C,$07,$01,$1F,$1A,$13]:PROCESA_LCDOUT2
+'ARRAYWRITE LCDOUT2,[$FE,$60,$12,$12,$1B,$09,$0C,$06,$03,$00]:PROCESA_LCDOUT2
+'ARRAYWRITE LCDOUT2,[$FE,$68,$06,$03,$01,$18,$0F,$07,$1F,$06]:PROCESA_LCDOUT2
+'ARRAYWRITE LCDOUT2,[$FE,$70,$0D,$09,$10,$10,$0C,$1F,$13,$00]:PROCESA_LCDOUT2
+'ARRAYWRITE LCDOUT2,[$FE,$78,$01,$01,$11,$19,$09,$1B,$1E,$18]:PROCESA_LCDOUT2
+
+'INI_LCD_0 VAR BYTE
+'INI_LCD_1 VAR BYTE 
+'INI_LCD_0 = 128
+'INI_LCD_1 = 192  
+'for temperatura = 0 to 40 step 2   
+'ARRAYWRITE LCDOUT2,[$FE,1]
+'PROCESA_LCDOUT2
+'PAUSE 100   
+'ARRAYWRITE LCDOUT2,[$FE,INI_LCD_0,0,1,2,3,$FE,INI_LCD_1,4,5,6,7]
+'PROCESA_LCDOUT2
+'INI_LCD_0  = INI_LCD_0 + 2
+'INI_LCD_1 = INI_LCD_1 + 2
+'pause 300
+
+
+'next
+
+'INI_LCD_0 = 148
+'INI_LCD_1 = 212
+
+'ARRAYWRITE LCDOUT2,[$FE,INI_LCD_0,0,1,2,3,$FE,INI_LCD_1,4,5,6,7,$FE,INI_LCD_0+4,0,1,2,3,$FE,INI_LCD_1+4,4,5,6,7]:PROCESA_LCDOUT2
+
+'END
+
+
+
+
+
+
+
+
+
+
+
+
+gosub LEE_EEPROM   
+gosub LCD_MENU_MARCA
+PAUSE 200
+gosub SOUNDER  
+gosub LCD_bienvenida  
+PAUSE 1500 
+ROTARY
+
+IF ACEPTAR = 1 THEN 'VERIFICA SI ESTA PRESIONADA LA TECLA ACEPTAR ANTES DE INICIAR   
+ROE            = ALERTA_ROE                                 
+TEMPERATURA    = ALERTA_TEMPERATURA
+IF ALERTA_ROE  = $FF THEN           'VERIFICA SI HAY DATOS GUARDADOS 
+ROE            = ROE_MIN 
+TEMPERATURA    = TEMPERATURA_MIN 'EN MEMORIA EEPROM LUEGO DE PRECIONADA LA TECLA ACEPTAR
+FRECUENCIA     = 1001'FRECUENCIA_Max
+POTENCIA       = POTENCIA_MIN
+ENDIF     
+GOTO SECUENCIA_DE_PRIMER_AJUSTE 
+ENDIF
+
+
+
+IF FRECUENCIA = $FFFF THEN   'VERIFICA SI HAY DATOS GUARDADOS EN MEMORIA EEPROM
+POTENCIA_DAC  = 0
+ROE           = ROE_MIN 
+POTENCIA      = POTENCIA_MIN 
+TEMPERATURA   = TEMPERATURA_MIN
+FRECUENCIA    = 1001'FRECUENCIA_Max  
+GOTO SECUENCIA_DE_PRIMER_AJUSTE
+ELSE'************************************************* 
+ROE             = ROE_MIN  
+TEMPERATURA     = TEMPERATURA_MIN
+SELECTOR_IniSeg = SELECTOR_IniSeg_MAX 
+CAL_POT         = 0   
+GOSUB LCD_MENUS  
+GOSUB LCD_MENU_PRINCIPAL 
+
+FOR SELECTOR_IniSeg = 0 TO 2 STEP 1
+GOSUB LCD_ACTUALIZA
+NEXT 
+
+'REF_DATO = POTENCIA   : POSICION_CURSOR = POTENCIA_IniSeg : GOsub LCD_ACTUALIZA_DATA
+GOSUB LCD_MENU_SONIDO
+
+CONFIGURA_MB
+
+GOSUB ACTIVA_POT    
+GOTO  MENU_PRINCIPAL    
+ENDIF
+'*******************************************************************************************************
+'*******************************************************************************************************
+SECUENCIA_DE_PRIMER_AJUSTE: 
+
+GOSUB LCD_MENUS
+GOSUB LCD_MENU_PRIMER_AJUSTE
+CAL_POT = 0  
+             
+FOR SELECTOR_IniSeg = 0 TO 2 STEP 1
+GOSUB LCD_ACTUALIZA
+NEXT    
+  
+ARRAYWRITE LCDOUT2,[$FE,FRECUENCIA_IniSeg,$FE,$0F]
+PROCESA_LCDOUT2
+
+ANTI_REBOTE
+REF_MAX         = SELECTOR_IniSeg_MAX
+REF_MIN         = SELECTOR_IniSeg_MIN
+REF_DATO        = SELECTOR_IniSeg_MAX 
+REF_PASO        = SELECTOR_IniSeg_PASO
+REF_CICLO       = REF_CICLO_SELECTOR
+SELECTOR_IniSeg = SELECTOR_IniSeg_MAX
+POSICION_CURSOR = FRECUENCIA_IniSeg
+ 
+GOTO MENU_AJUSTE
+'*******************************************************************************************************  
+'*******************************************************************************************************
+MENU_PRINCIPAL:
+
+ROTARY   
+                             
+IF ACEPTAR = 1 THEN : T_PULSA = 0 : GOSUB AJUSTE_POTENCIA_DAC  
+T_PULSA    = 0       
+
+IF CAL_POT = 1 THEN  
+GOSUB AJUSTE_VARIABLES_DE_REFERENCIA 
+if POTENCIA  <>  REF_DATO then                                
+POSICION_CURSOR = POTENCIA_IniSeg : GOsub LCD_ACTUALIZA_DATA
+POTENCIA     =  REF_DATO 
+POTENCIA_DAC = (POTENCIA * 15) / 100 + 16                     
+DACCON1      =  POTENCIA_DAC'CARGA EL VALOR DEL DAC 
+DACCON0  = %10100000'HABILITA Y ACTIVA DAC  
+ANTI_REBOTE 
+ENDIF  
+ENDIF  
+								 
+if CAL_POT = 0 then GOSUB LEE_ADC  
+
+IF ROE=> ALERTA_ROE  AND CAL_POT = 0 THEN GOSUB DESACTIVA_POT : GOTO LCD_ALARMA2'END
+IF TEMPERATURA=> ALERTA_TEMPERATURA AND CAL_POT= 0 THEN GOSUB DESACTIVA_POT : GOTO LCD_ALARMA2'END
+								    
+IF EX_RTP  <> ROE + TEMPERATURA + PWO + TONO THEN 
+EX_RTP  = ROE + TEMPERATURA + PWO + TONO
+
+
+                                           
+FOR SELECTOR_IniSeg = 1 TO 3 STEP 1
+GOSUB LCD_ACTUALIZA  
+NEXT
+
+GOSUB LCD_MENU_SONIDO
+
+ANTI_REBOTE
+ENDIF  
+
+GOTO MENU_PRINCIPAL
+'*******************************************************************************************************
+'*******************************************************************************************************
+'*******************************************************************************************************
+'*******************************************************************************************************
+'*******************************************************************************************************
+MENU_AJUSTE:
+
+ROTARY
+
+GOSUB AJUSTE_VARIABLES_DE_REFERENCIA 
+
+SELECTOR_IniSeg = REF_DATO
+
+IF SELECTOR_IniSeg <> EX_SELECTOR_IniSeg THEN 
+               
+EX_SELECTOR_IniSeg = SELECTOR_IniSeg                    
+
+LOOKUP SELECTOR_IniSeg,[Aceptar_IniSEG,_'____________________0
+						ROE_INISEG,_    '____________________1
+						TEMPERATURA_INISEG,_'________________2
+						FRECUENCIA_INISEG],POSICION_CURSOR'__3
+
+ARRAYWRITE LCDOUT2,[$FE,POSICION_CURSOR]
+PROCESA_LCDOUT2
+
+ANTI_REBOTE
+ENDIF
+
+
+   
+IF ACEPTAR = 1 THEN                       
+ARRAYWRITE LCDOUT2,[$FE,POSICION_CURSOR,$FE,$0E]
+PROCESA_LCDOUT2
+  
+
+
+IF SELECTOR_IniSeg = 3 THEN
+REF_DATO  = FRECUENCIA
+REF_MAX   = FRECUENCIA_MAX
+REF_MIN   = FRECUENCIA_MIN 
+REF_PASO  = FRECUENCIA_PASO
+REF_CICLO = REF_CICLO_FRECCUENCIA  
+ANTI_REBOTE
+GOSUB AJUSTE
+FRECUENCIA = REF_DATO
+REF_DATO = 3
+ENDIF
+
+IF SELECTOR_IniSeg = 2 THEN
+REF_DATO  = TEMPERATURA
+REF_MAX   = TEMPERATURA_MAX
+REF_MIN   = TEMPERATURA_MIN 
+REF_PASO  = TEMPERATURA_PASO 
+REF_CICLO = REF_CICLO_TEMPERATURA 
+ANTI_REBOTE
+GOSUB AJUSTE
+TEMPERATURA = REF_DATO
+REF_DATO = 2
+ENDIF
+
+IF SELECTOR_IniSeg = 1 THEN   
+REF_DATO  = ROE
+REF_MAX   = ROE_MAX
+REF_MIN   = ROE_MIN
+REF_PASO  = ROE_PASO
+REF_CICLO = REF_CICLO_ROE
+ANTI_REBOTE
+GOSUB AJUSTE
+ROE = REF_DATO
+REF_DATO = 1
+ENDIF
+
+IF SELECTOR_IniSeg = 0 THEN
+gosub GRABA_EEPROM 
+gosub LEE_EEPROM 
+CAL_POT = 0
+EX_RTP  = 0  
+GOSUB LCD_MENUS
+GOSUB LCD_MENU_PRINCIPAL
+FOR SELECTOR_IniSeg = 0 TO 2 STEP 1
+GOSUB LCD_ACTUALIZA
+NEXT 
+REF_DATO = POTENCIA : POSICION_CURSOR= POTENCIA_IniSeg : GOsub LCD_ACTUALIZA_DATA
+
+CONFIGURA_MB
+
+GOSUB ACTIVA_POT
+ANTI_REBOTE  
+GOTO  MENU_PRINCIPAL  
+ENDIF
+
+ENDIF
+
+GOTO MENU_AJUSTE
+'*******************************************************************************************************
+'*******************************************************************************************************
+'*******************************************************************************************************
+'*******************************************************************************************************
+'*******************************************************************************************************
+AJUSTE:                                                                                               
+
+ROTARY                                                                             
+GOSUB AJUSTE_VARIABLES_DE_REFERENCIA                                                                                        
+                                                                                                       
+IF REF_DATO <> EX_REF_DATA THEN                                                                             
+EX_REF_DATA = REF_DATO 
+     
+GOSUB LCD_ACTUALIZA_DATA                                                                       
+
+ANTI_REBOTE                                                                                      
+ENDIF                                                                                                  
+                                                                                                      
+IF ACEPTAR = 1 THEN 
+SELECTOR_IniSeg = EX_SELECTOR_IniSeg
+ARRAYWRITE LCDOUT2,[$FE,POSICION_CURSOR,$FE,$0F]
+PROCESA_LCDOUT2                                            
+REF_MAX  = SELECTOR_IniSeg_MAX                                                                       
+REF_MIN  = SELECTOR_IniSeg_MIN                                                                        
+REF_PASO = SELECTOR_IniSeg_PASO
+ANTI_REBOTE                                                                                     
+RETURN                                                                                                
+ENDIF                                                                                                 
+GOTO AJUSTE                                                                                           
+'*******************************************************************************************************
+
+'*******************************************************************************************************
+AJUSTE_POTENCIA_DAC:  
+
+IF  ACEPTAR = 1 THEN
+
+IF CAL_POT = 1 THEN 
+ARRAYWRITE LCDOUT2,[$FE,$0C]
+PROCESA_LCDOUT2
+WRITE 05,POTENCIA   
+CAL_POT = 0
+T_PULSA = 0
+ANTI_REBOTE
+RETURN    
+ENDIF 
+														  
+
+WHILE  ACEPTAR = 1 
+
+ROTARY
+PAUSE 10   
+T_PULSA = T_PULSA + 1      
+  
+IF T_PULSA => 220  THEN 
+ARRAYWRITE LCDOUT2,[$FE,POTENCIA_IniSeg,$FE,$0F,$FE,POTENCIA_IniSeg]
+PROCESA_LCDOUT2    
+POSICION_CURSOR = POTENCIA_IniSeg 
+REF_DATO        = POTENCIA
+REF_MAX         = POTENCIA_MAX 
+REF_MIN         = POTENCIA_MIN 
+REF_PASO        = POTENCIA_PASO
+REF_CICLO       = REF_CICLO_POTENCIA
+CAL_POT         = 1                    
+GOSUB LCD_MENU_AJUSTE_POTENCIA
+reTURN
+endif
+IF T_PULSA => 520  THEN gOSUB LCD_about
+WEND 
+T_PULSA         = 0                                          
+ENDIF  
+
+RETURN
+'*******************************************************************************************************
+
+'*******************************************************************************************************
+AJUSTE_VARIABLES_DE_REFERENCIA:
+
+
+                                                                   
+IF  MENOS = 1   THEN
+ 
+ 
+IF REF_DATO <= REF_MIN AND REF_CICLO = 1 THEN  REF_DATO =  REF_MIN :PAUSE 80:RETURN    
+IF REF_DATO <= REF_MIN                 THEN  REF_DATO =  REF_MAX :RETURN  
+   REF_DATO = REF_DATO - REF_PASO     
+ENDIF
+
+IF  MAS   = 1   THEN  
+
+IF REF_DATO => REF_MAX AND REF_CICLO = 1 THEN REF_DATO = REF_MAX   :PAUSE 80:RETURN 
+IF REF_DATO => REF_MAX                 THEN REF_DATO = REF_MIN   :RETURN
+   REF_DATO = REF_DATO + REF_PASO     
+ENDIF  
+
+RETURN
+'*******************************************************************************************************
+'*******************************************************************************************************
+LCD_BIENVENIDA: 
+ARRAYWRITE LCDOUT2,[$FE,1                                                 ]
+PROCESA_LCDOUT2 
+PAUSE 10
+ARRAYWRITE LCDOUT2,[$FE,153,"BIENVENIDO"                                  ]
+PROCESA_LCDOUT2
+RETURN 
+'*******************************************************************************************************
+LCD_MENU_MARCA:
+ARRAYWRITE LCDOUT2,[$FE,1                                                 ]
+PROCESA_LCDOUT2
+PAUSE 10
+ARRAYWRITE LCDOUT2,[$FE,$40,$01,$02,$06,$04,$0C,$08,$19,$1B               ]
+PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$48,$00,$00,$00,$08,$10,$10,$01,$0B               ]
+PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$50,$00,$00,$00,$02,$01,$01,$10,$1A               ]
+PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$58,$10,$08,$0C,$04,$06,$03,$13,$1B               ]
+PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$60,$1B,$19,$08,$0C,$04,$06,$02,$01               ]
+PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$68,$0B,$01,$10,$11,$0B,$03,$07,$0F               ]
+PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$70,$1A,$10,$01,$11,$1A,$18,$1C,$1E               ]
+PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$78,$1B,$13,$02,$06,$04,$0C,$08,$10               ]
+PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,1                                                 ]
+PROCESA_LCDOUT2
+PAUSE 10
+ARRAYWRITE LCDOUT2,[$FE,128,0,1,2,3,$FE,192,4,5,6,7                       ]
+PROCESA_LCDOUT2
+FOR A = 0 TO 6 STEP 1
+
+ARRAYWRITE LCDOUT2,[$FE,%11100                                            ]
+PROCESA_LCDOUT2
+PAUSE 100
+NEXT 
+ARRAYWRITE LCDOUT2,[$FE,%10000                                            ]
+PROCESA_LCDOUT2 'DESACTIVA MODO DESPLAZAMIENTO DISPLAY
+PAUSE 5
+
+PAUSE 100
+P = 80 
+ARRAYWRITE LCDOUT2,[$FE,142,"J-TELECTRONIC'S"                             ]
+PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,205,"www.radioenlace.cl"                          ]
+PROCESA_LCDOUT2
+P=0
+ARRAYWRITE LCDOUT2,[$FE,%11100,$FE,%10000                                 ]
+PROCESA_LCDOUT2  
+ 
+return
+'*******************************************************************************************************
+LCD_ABOUT: 
+ARRAYWRITE LCDOUT2,_
+[$FE,1]
+PROCESA_LCDOUT2
+PAUSE 10                      
+                           
+ARRAYWRITE LCDOUT2,[$FE,128,"ESTO LO HIZO "]
+PROCESA_LCDOUT2 
+
+ARRAYWRITE LCDOUT2,[$FE,192,"RADIOMARC"]
+PROCESA_LCDOUT2 
+
+ARRAYWRITE LCDOUT2,[$FE,148,"LANCO - 2025"]
+PROCESA_LCDOUT2
+
+ARRAYWRITE LCDOUT2,[$FE,212,"SITETIZADOR"]
+PROCESA_LCDOUT2 
+ANTI_REBOTE                 
+PAUSE 15000   
+RETURN     
+
+gosub LEE_EEPROM 
+CAL_POT = 0
+EX_RTP  = 0  
+GOSUB LCD_MENUS
+GOSUB LCD_MENU_PRINCIPAL
+
+FOR SELECTOR_IniSeg = 0 TO 2 STEP 1
+GOSUB LCD_ACTUALIZA
+NEXT 
+
+REF_DATO = POTENCIA : POSICION_CURSOR= POTENCIA_IniSeg : GOsub LCD_ACTUALIZA_DATA    
+
+ANTI_REBOTE 
+
+CAL_POT         = 0                    
+T_PULSA         = 0
+ 
+GOTO  MENU_PRINCIPAL  
+
+
+
+
+
+
+'*******************************************************************************************************
+LCD_MENUS:    
+                               
+ARRAYWRITE LCDOUT2,_
+[$FE,1]
+PROCESA_LCDOUT2                         
+PAUSE 10                      
+                           
+ARRAYWRITE LCDOUT2,[$FE,FRECUENCIA_Ini_LCD,"FRECUENCIA:",$FE,FRECUENCIA_Ini_LCD+15,". MHZ"     ]
+PROCESA_LCDOUT2 
+
+ARRAYWRITE LCDOUT2,[$FE,TEMPERATURA_Ini_LCD,"TEMPERATURA:",$FE,TEMPERATURA_Ini_LCD+16,$DF,"C"  ] 
+PROCESA_LCDOUT2
+
+
+ARRAYWRITE LCDOUT2,[$FE,ROE_Ini_LCD,"ROE:",$FE,ROE_Ini_LCD+7,"W"                               ]
+PROCESA_LCDOUT2
+
+RETURN
+'*******************************************************************************************************
+                                       
+'*******************************************************************************************************
+LCD_MENU_PRIMER_AJUSTE: 
+ARRAYWRITE LCDOUT2,[$FE,218,"ACEPTAR"                                     ]
+PROCESA_LCDOUT2 
+RETURN 
+'*******************************************************************************************************
+
+'*******************************************************************************************************
+LCD_MENU_PRINCIPAL:
+ARRAYWRITE LCDOUT2,[$FE,PWO_Ini_LCD ,"PWO:",$FE,PWO_Ini_LCD+9,"W  "                            ]
+PROCESA_LCDOUT2  
+pause 10
+ARRAYWRITE LCDOUT2,[$FE,212,"VOL:" ]
+PROCESA_LCDOUT2
+
+RETURN   
+
+LCD_MENU_AJUSTE_POTENCIA: 
+ARRAYWRITE LCDOUT2,_
+[$FE,1]
+PROCESA_LCDOUT2
+PAUSE 10 
+
+ARRAYWRITE LCDOUT2,[$FE,212,"AJUSTE POW:",$FE,POTENCIA_IniSeg," %",$FE,$0C]
+PROCESA_LCDOUT2
+RETURN 
+
+  
+'*******************************************************************************************************
+ 
+'*******************************************************************************************************
+'LCD_ALARMA:                                                        
+'ARRAYWRITE LCDOUT2,[$FE,1                                                 ]
+'PROCESA_LCDOUT2      
+'PAUSE 10
+'ARRAYWRITE LCDOUT2,[$FE,134,"ALARMA"                                      ]
+'PROCESA_LCDOUT2
+'ARRAYWRITE LCDOUT2,[$FE,199,"DE"                                          ]
+'PROCESA_LCDOUT2  
+'ARRAYWRITE LCDOUT2,[$FE,214,"REVISE SISTEMA"                              ]
+'PROCESA_LCDOUT2
+'RETURN   
+'*******************************************************************************************************
+LCD_ALARMA2: 
+ARRAYWRITE LCDOUT2,[$FE,1                                                 ]
+PROCESA_LCDOUT2      
+PAUSE 10 
+
+
+'Cont var byte      
+'Nota var byte   
+'Dur var byte  
+'Largo var byte  
+
+
+''Programa Principal:    
+'Pause 500              'Pausa de .5 Seg para inicializar bien el PIC 
+'largo=149              
+'Bucle:
+'if largo=149 then      'Arreglo para que repita el estribillo
+'largo=65               'Reproduce las primeras 65 notas
+'else
+'largo=149              'Reproduce todas las 149 notas 
+'endif
+'for cont = 0 to largo 
+''Lista de las notas musicales, el 0 es silencio:
+'lookup cont,[98,0,98,0,98,0,98,0,98,0,94,0,90,0,98,0,_ 
+'98,0,98,0,98,0,102,0,99,0,98,0,98,0,99,0,94,0,_ 
+'94,0,94,0,98,0,99,0,99,0,99,0,98,0,94,0,90,0,_ 
+'90,0,98,0,94,0,90,0,88,0,94,0,90,0,_ 
+'105,0,105,0,105,0,105,0,108,0,109,0,108,0,_ 
+'105,0,102,0,102,0,102,0,108,0,105,0,_ 
+'98,0,102,0,99,0,98,0,94,0,_ 
+'105,0,108,0,109,0,105,0,_ 
+'105,0,108,0,109,0,105,0,_ 
+'105,0,108,0,109,0,111,0,_ 
+'109,0,108,0,109,0,109,0,108,0,109,0,109,0,108,0,109,0,111,0,108,0,109,0],nota 
+''Lista de las duraciones de cada nota y silencio:
+'lookup cont,[20,4,20,4,20,4,40,4,20,4,20,4,20,4,60,22,_ 
+'20,4,20,4,40,4,40,2,20,4,20,4,20,4,20,4,60,22,_ 
+'20,4,20,4,20,4,20,4,60,16,20,4,20,4,20,4,60,22,_ 
+'20,4,20,4,40,4,40,4,20,4,40,4,80,44,_ 
+'20,4,20,4,20,4,60,4,20,4,20,4,60,44,_ 
+'20,4,40,4,60,4,20,4,40,4,60,44,_ 
+'20,4,40,4,20,4,40,4,60,44,_ 
+'20,4,20,4,20,4,40,44,_ 
+'20,4,20,4,20,4,40,44,_ 
+'20,4,20,4,40,4,100,44,_ 
+'20,4,20,4,60,40,20,4,20,4,60,50,20,4,20,4,80,50,20,4,40,4,100,4],dur 
+
+
+'Sound buzzer,[nota,dur]  'Reproduce una nota (o silencio)
+'next                
+'if largo=149 then pause 3000 'Si es el final de la melodía hace una pausa
+'Goto bucle  'Repite indefinidamente la melodía
+'end
+
+'goto lcd_alarma2
+
+
+
+ARRAYWRITE LCDOUT2,[$FE,135,"ALARMA"]:PROCESA_LCDOUT2
+
+IF ROE=> ALERTA_ROE THEN ARRAYWRITE LCDOUT2,[$FE,201,#ROE,"W",$FE,220,"ROE"]
+PROCESA_LCDOUT2
+IF TEMPERATURA=> ALERTA_TEMPERATURA THEN ARRAYWRITE LCDOUT2,[$FE,201,#TEMPERATURA,$DF,"C",$FE,217,"TEMPERATURA"]
+PROCESA_LCDOUT2
+
+ARRAYWRITE LCDOUT2,[$FE,$40,$04,$02,$01,$00,$10,$08,$04,$00]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$48,$01,$03,$02,$06,$04,$0D,$19,$11]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$50,$10,$18,$08,$0C,$04,$16,$13,$11]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$58,$04,$08,$10,$00,$01,$02,$04,$00]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$60,$11,$0B,$06,$0C,$08,$18,$10,$1F]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$68,$01,$01,$00,$03,$03,$03,$00,$1F]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$70,$10,$10,$00,$18,$18,$18,$00,$1F]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$78,$11,$1A,$0C,$06,$02,$03,$01,$1F]:PROCESA_LCDOUT2  
+ARRAYWRITE LCDOUT2,[$FE,128,0,1,2,3,$FE,192,4,5,6,7        ]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,144,0,1,2,3,$FE,208,4,5,6,7        ]:PROCESA_LCDOUT2
+
+PAUSE 600 
+LCD_LED = 0 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
+PWM BUZZER, 127, 80     ' Beep 5: sostenido (fin de inicio)
+PAUSE 250
+LCD_LED = 1 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
+PWM BUZZER, 127, 80      ' Beep corto confirmación
+PAUSE 50
+LCD_LED = 0 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
+PWM BUZZER, 127, 80
+PAUSE 250
+LCD_LED = 1 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
+'=============================================================
+ARRAYWRITE LCDOUT2,[$FE,198,"         "     ]:PROCESA_LCDOUT2 
+ARRAYWRITE LCDOUT2,[$FE,$40,$00,$00,$00,$00,$00,$00,$00,$00]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$48,$01,$03,$02,$06,$04,$0C,$18,$10]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$50,$10,$18,$08,$0C,$04,$06,$03,$01]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$58,$00,$00,$00,$00,$00,$00,$00,$00]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$60,$01,$03,$06,$0C,$08,$18,$10,$1F]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$68,$00,$00,$00,$00,$00,$00,$00,$1F]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$70,$00,$00,$00,$00,$00,$00,$00,$1F]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,$78,$10,$18,$0C,$06,$02,$03,$01,$1F]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,128,0,1,2,3,$FE,192,4,5,6,7        ]:PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,144,0,1,2,3,$FE,208,4,5,6,7        ]:PROCESA_LCDOUT2
+
+PAUSE 600 
+goto LCD_ALARMA2														   
+'*******************************************************************************************************
+'LCD_ALARMA_TEMPERATURA:
+'ARRAYWRITE LCDOUT2,[$FE,152,"TEMPERATURA:",#TEMPERATURA                   ]
+'PROCESA_LCDOUT2
+'RETURN
+''******************************************************************************************************* 
+
+''*******************************************************************************************************
+'LCD_ALARMA_ROE: 
+'ARRAYWRITE LCDOUT2,[$FE,155,"ROE:",#ROE                                   ]
+'PROCESA_LCDOUT2 
+'RETURN 
+'*******************************************************************************************************
+
+'*******************************************************************************************************
+LCD_ACTUALIZA: 									  
+IF SELECTOR_IniSeg= 0                THEN REF_DATO= FRECUENCIA :POSICION_CURSOR= FRECUENCIA_IniSeg :GOTO LCD_ACTUALIZA_DATA 
+IF SELECTOR_IniSeg= 1                THEN REF_DATO= TEMPERATURA:POSICION_CURSOR= TEMPERATURA_IniSeg:GOTO LCD_ACTUALIZA_DATA
+IF SELECTOR_IniSeg= 2                THEN REF_DATO= ROE        :POSICION_CURSOR= ROE_IniSeg        :GOTO LCD_ACTUALIZA_DATA                 
+IF SELECTOR_IniSeg= 3                THEN REF_DATO= PWO        :POSICION_CURSOR= PWO_IniSeg        :GOTO LCD_ACTUALIZA_DATA
+IF SELECTOR_IniSeg= 4 AND CAL_POT= 1 THEN REF_DATO= POTENCIA   :POSICION_CURSOR= POTENCIA_IniSeg   :GOTO LCD_ACTUALIZA_DATA
+                                                        
+LCD_ACTUALIZA_DATA:   
+IF REF_DATO < 10    THEN MUEVE_CURSOR = 0 : GOTO LCD_ACTUALIZA_REF_DATA
+IF REF_DATO < 100   THEN MUEVE_CURSOR = 1 : GOTO LCD_ACTUALIZA_REF_DATA
+IF REF_DATO < 1000  THEN MUEVE_CURSOR = 2 : GOTO LCD_ACTUALIZA_REF_DATA  
+IF REF_DATO < 10000 THEN MUEVE_CURSOR = 3 : GOTO LCD_ACTUALIZA_REF_DATA  
+
+
+LCD_ACTUALIZA_REF_DATA:  
+
+IF POSICION_CURSOR= FRECUENCIA_IniSeg  THEN
+
+ARRAYWRITE LCDOUT2,[$FE, POSICION_CURSOR-4, "     ",_
+                    $FE,POSICION_CURSOR-MUEVE_CURSOR-1,#REF_DATO/10, ".",#REF_DATO//10,_
+					$FE,POSICION_CURSOR]
+                    PROCESA_LCDOUT2  
+ELSE
+
+ARRAYWRITE LCDOUT2,[$FE,POSICION_CURSOR-2,"   ",_
+                    $FE,POSICION_CURSOR-MUEVE_CURSOR,#REF_DATO,_
+                    $FE, POSICION_CURSOR]
+                    PROCESA_LCDOUT2  
+ENDIF      
+	
+RETURN
+'*******************************************************************************************************
+'*******************************************************************************************************
+LCD_MENU_SONIDO:   
+
+ 
+
+IF AUXTONO <> TONO THEN
+ARRAYWRITE LCDOUT2,[$FE,64 ,0  ,16 ,16 ,16 ,16 ,16 ,16 ,0]      : PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,72 ,0  ,24 ,24 ,24 ,24 ,24 ,24 ,0]      : PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,80 ,0  ,28 ,28 ,28 ,28 ,28 ,28 ,0]      : PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,88 ,0  ,30 ,30 ,30 ,30 ,30 ,30 ,0]      : PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,96 ,0  ,31 ,31 ,31 ,31 ,31 ,31 ,0]      : PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,104,$12,$1B,$00,$04,$11,$0E,$00,$00]  : PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,112,$00,$1B,$09,$04,$00,$0E,$11,$00]  : PROCESA_LCDOUT2
+ARRAYWRITE LCDOUT2,[$FE,120,$1F,$0A,$1F,$0A,$1F,$0A,$1F,$15]  : PROCESA_LCDOUT2
+
+AUXTONO = TONO                       
+DDRAM = 216
+
+ 
+IF TONO > 10 THEN             'VALOR MAXIMO ADC 160 / 16 = 10                                                
+FOR CONTADOR = 1 TO (TONO/10)                               
+ARRAYWRITE LCDOUT2,[$FE,DDRAM,4] : PROCESA_LCDOUT2
+DDRAM = DDRAM + 1                    
+NEXT CONTADOR 
+ENDIF
+IF TONO > 2 THEN    
+DATO_ACTUAL  = (TONO // 5)'EL RESULTADO DE ESTA ECUACION VALORES SIEMPRE SON: 4,3,2,1,0 
+ARRAYWRITE LCDOUT2,[$FE,DDRAM,DATO_ACTUAL]    : PROCESA_LCDOUT2
+ENDIF
+
+TONO = TONO/10    'DEVUELVE EL RESULTADO DE LADIVISION ---- VALOR ADC 160 / 16 = 10                                                   
+TONO = 16 - TONO  'RESTA EL TOTAL DE LOS SEGMENTOS  MENOS EL VALOR DE VOL / 10 SI VOLT / 10 = 16 - 16 = 0                                                               
+
+FOR CONTADOR = 1 TO (TONO) step 1  'PINTA EL RESTO DE SEGMENTOS EN BLANCO
+F = 20
+DDRAM = DDRAM + 1 
+ARRAYWRITE LCDOUT2,[$FE,DDRAM,F] : PROCESA_LCDOUT2  
+NEXT CONTADOR  
+ 
+TONO = AUXTONO                                                                 
+ENDIF  
+                                 RETURN
+'*******************************************************************************************************
+'*******************************************************************************************************
+SOUND_ALARMA:                            
+'RW = 1
+''lcd_led = 0
+'ARRAYWRITE LCDOUT2,[$FE,$C0]:PROCESA_LCDOUT2
+'PAUSE 200                    
+'RW = 0
+''lcd_led = 1
+'ARRAYWRITE LCDOUT2,[$FE,$C0]:PROCESA_LCDOUT2
+'PAUSE 100     
+GOTO SOUND_ALARMA
+'*******************************************************************************************************
+
+SOUNDER:  
+   ' Pin conectado al buzzer activo
+LCD_LED = 0 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
+'================== SONIDO DE INICIO ==========================
+PWM BUZZER, 127, 100     ' Beep 1: corto
+PAUSE 100
+LCD_LED = 1 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
+PWM BUZZER, 127, 150     ' Beep 2: un poco más largo
+PAUSE 100
+LCD_LED = 0 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
+PWM BUZZER, 127, 200     ' Beep 3: más largo
+PAUSE 150
+LCD_LED = 1 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
+PWM BUZZER, 127, 250     ' Beep 4: aún más largo
+PAUSE 200
+LCD_LED = 0 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
+PWM BUZZER, 127, 300     ' Beep 5: sostenido (fin de inicio)
+PAUSE 300
+LCD_LED = 1 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
+PWM BUZZER, 127, 80      ' Beep corto confirmación
+PAUSE 100
+LCD_LED = 0 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
+PWM BUZZER, 127, 80
+PAUSE 300
+LCD_LED = 1 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
+'=============================================================
+
+RETURN
+
+'*******************************************************************************************************
+LEE_ADC:
+
+
+owout TEMPERATURA_IN ,1,[$CC,$44]
+pause 760
+owout TEMPERATURA_IN ,1,[$CC,$BE]
+owIN  TEMPERATURA_IN ,0, [STR TEMPERATURA\9]
+TEMPERATURA =  TEMPERATURA[0] >> 4 | TEMPERATURA[1] << 4 
+IF TEMPERATURA = 85 THEN TEMPERATURA = 0 'CUANDO LEE VALOR DESPUES DE UN RESET DEL BS18B20 TEMP = 85
+
+
+
+
+'TRISC.2  = 1  : ANSELC.2 = 1
+ADCIN 6, TONO
+if TONO  =>160 then TONO  = 160 
+'TRISC.2  = 0  : ANSELC.2 = 0
+
+
+ADCIN 1, ROE 
+ROE  = ROE  * 14
+ROE  = ROE  / 10 
+IF ROE  = 0 THEN ROE  = 1
+
+ADCIN 5, PWO
+PWO  = PWO * 14
+PWO  = PWO  / 10 
+IF PWO = 0 THEN PWO  = 1
+
+RETURN 
+'*******************************************************************************************************  
+'*******************************************************************************************************
+LEE_EEPROM: 
+READ 00,FRECUENCIA.BYTE0
+READ 01,FRECUENCIA.BYTE1
+'READ 02,KHZ 
+READ 03,ALERTA_ROE  
+READ 04,ALERTA_TEMPERATURA 
+READ 05,POTENCIA
+RETURN  
+'*******************************************************************************************************
+'*******************************************************************************************************
+GRABA_EEPROM:
+WRITE 00,FRECUENCIA.BYTE0
+WRITE 01,FRECUENCIA.BYTE1
+'WRITE 02,KHZ 
+WRITE 03,ROE 
+WRITE 04,TEMPERATURA 
+WRITE 05,POTENCIA
+RETURN
+'*******************************************************************************************************
+'*******************************************************************************************************
+DESACTIVA_POT: 
+DACCON0  = 0   
+PAUSE 10
+RETURN 
+'******************************************************************************************************* 
+'*******************************************************************************************************
+ACTIVA_POT:
+'TIEMPO DE ESPERA PARA ACTIVAR POTENCIA_DAC
+POTENCIA_DAC = (POTENCIA * 31) / 100                       
+DACCON1  =  POTENCIA_DAC 
+PAUSE 10 
+DACCON0  = %10100000'HABILITA Y ACTIVA DAC   
+PAUSE 10            
+RETURN
