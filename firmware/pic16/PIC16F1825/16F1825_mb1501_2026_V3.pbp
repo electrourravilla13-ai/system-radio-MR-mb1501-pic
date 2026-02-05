@@ -3,7 +3,7 @@
  __CONFIG _CONFIG2, _WRT_OFF & _PLLEN_ON & _STVREN_OFF & _LVP_OFF 
 #ENDCONFIG
 @ ERRORLEVEL -306                
-define OSC 32    'Este es el nuevo sistema con repositorio
+define OSC 32    'Este es el nuevtema con repositorio
 OSCCON     = %11110000 
 '*******************************************************************************************************
 TRISA	   = %00000010 
@@ -739,8 +739,8 @@ PAUSE 10
 
 'Sound buzzer,[nota,dur]  'Reproduce una nota (o silencio)
 'next                
-'if largo=149 then pause 3000 'Si es el final de la melodÌa hace una pausa
-'Goto bucle  'Repite indefinidamente la melodÌa
+'if largo=149 then pause 3000 'Si es el final de la melod√≠a hace una pausa
+'Goto bucle  'Repite indefinidamente la melod√≠a
 'end
 
 'goto lcd_alarma2
@@ -770,7 +770,7 @@ LCD_LED = 0 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
 PWM BUZZER, 127, 80     ' Beep 5: sostenido (fin de inicio)
 PAUSE 250
 LCD_LED = 1 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
-PWM BUZZER, 127, 80      ' Beep corto confirmaciÛn
+PWM BUZZER, 127, 80      ' Beep corto confirmaci√≥n
 PAUSE 50
 LCD_LED = 0 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
 PWM BUZZER, 127, 80
@@ -901,19 +901,19 @@ LCD_LED = 0 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
 PWM BUZZER, 127, 100     ' Beep 1: corto
 PAUSE 100
 LCD_LED = 1 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
-PWM BUZZER, 127, 150     ' Beep 2: un poco m·s largo
+PWM BUZZER, 127, 150     ' Beep 2: un poco m√°s largo
 PAUSE 100
 LCD_LED = 0 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
-PWM BUZZER, 127, 200     ' Beep 3: m·s largo
+PWM BUZZER, 127, 200     ' Beep 3: m√°s largo
 PAUSE 150
 LCD_LED = 1 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
-PWM BUZZER, 127, 250     ' Beep 4: a˙n m·s largo
+PWM BUZZER, 127, 250     ' Beep 4: a√∫n m√°s largo
 PAUSE 200
 LCD_LED = 0 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
 PWM BUZZER, 127, 300     ' Beep 5: sostenido (fin de inicio)
 PAUSE 300
 LCD_LED = 1 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
-PWM BUZZER, 127, 80      ' Beep corto confirmaciÛn
+PWM BUZZER, 127, 80      ' Beep corto confirmaci√≥n
 PAUSE 100
 LCD_LED = 0 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
 PWM BUZZER, 127, 80
