@@ -3,7 +3,7 @@
  __CONFIG _CONFIG2, _WRT_OFF & _PLLEN_ON & _STVREN_OFF & _LVP_OFF 
 #ENDCONFIG
 @ ERRORLEVEL -306                
-define OSC 32 
+define OSC 32    'Este es el nuevo sistema con repositorio
 OSCCON     = %11110000 
 '*******************************************************************************************************
 TRISA	   = %00000010 
