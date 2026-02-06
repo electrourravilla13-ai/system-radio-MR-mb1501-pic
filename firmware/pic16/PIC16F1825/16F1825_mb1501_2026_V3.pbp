@@ -155,7 +155,7 @@ ALERTA_TEMPERATURA = 0
 
 
 TONO              = 0 
-AUXTONO            = 0 
+AUXTONO            = 1 
 CONTADOR           = 0 
 DDRAM             = 0 
 F                 = 0 
@@ -172,15 +172,44 @@ DATO_ACTUAL      = 0
 
 'AUXTONO = 0
 'TONO  = 1
+'ARRAYWRITE LCDOUT2,[$FE,1]        
+'PROCESA_LCDOUT2
+'PAUSE 10
+'ARRAYWRITE LCDOUT2,[$FE,128,"HOLA"]        
+'PROCESA_LCDOUT2
+'PAUSE 1000
+'ARRAYWRITE LCDOUT2,[$FE,1]        
+'PROCESA_LCDOUT2
+'PAUSE 10
+'ARRAYWRITE LCDOUT2,[$FE,128,"ADC: ",#TONO]        
+'PROCESA_LCDOUT2
+' CT VAR WORD 
+'CT = 0
 
 INICIO: 
+'
 
-WRITE 00,100
-WRITE 01,1
+'random tono
+'if tono < 300 then 
+'pause 50
+'gosub LCD_MENU_SONIDO_1_5_v	
+'endif
+
+'I var word
+
+'for tono = 0 to 300 step 1
+''pause 1000
+'gosub LCD_MENU_SONIDO_1_5_v	
+'next 
+''
+
+'goto inicio
+WRITE 00,$F3
+WRITE 01,$03
 'WRITE 02,KHZ 
-WRITE 03,25 
-WRITE 04,80
-WRITE 05,100
+WRITE 03,$19
+WRITE 04,$50
+WRITE 05,$00
 'ADCIN 6, TONO
 
 'IF AUXTONO <> TONO THEN
@@ -263,7 +292,7 @@ WRITE 05,100
 gosub LEE_EEPROM   
 gosub LCD_MENU_MARCA
 PAUSE 200
-gosub SOUNDER  
+'gosub SOUNDER  
 gosub LCD_bienvenida  
 PAUSE 1500 
 ROTARY
@@ -363,7 +392,12 @@ if CAL_POT = 0 then GOSUB LEE_ADC
 IF ROE=> ALERTA_ROE  AND CAL_POT = 0 THEN GOSUB DESACTIVA_POT : GOTO LCD_ALARMA2'END
 IF TEMPERATURA=> ALERTA_TEMPERATURA AND CAL_POT= 0 THEN GOSUB DESACTIVA_POT : GOTO LCD_ALARMA2'END
 
-GOSUB LCD_MENU_SONIDO 	
+
+
+'GOSUB LCD_MENU_SONIDO 
+GOSUB LCD_MENU_SONIDO_1_5_v	
+
+
 							    
 IF EX_RTP  <> ROE + TEMPERATURA + PWO THEN 
 EX_RTP  = ROE + TEMPERATURA + PWO
@@ -888,76 +922,130 @@ RETURN
 '*******************************************************************************************************
 LCD_MENU_SONIDO:  
 
-SEG_ACT   VAR BYTE   ' Cantidad de segmentos activos según ADC
-POS_BASE  VAR BYTE   ' Posición inicial de la barra de volumen en el LCD
-I  VAR BYTE   ' Contador auxiliar para bucles de limpieza/pintado 
 
-'LCD_MENU_SONIDO:   
 
-    ADCIN 6, TONO   
+  
 
-    IF TONO >= 60 THEN TONO = 60  
+  
 
-    ' --- BORRADO FORZADO CON VOLUMEN BAJO ---
-    IF TONO <= 2 THEN
-        POS_BASE = 216
-        DDRAM = POS_BASE
-
-        FOR I = 1 TO 14
-            ARRAYWRITE LCDOUT2,[$FE,DDRAM," "] : PROCESA_LCDOUT2
-            DDRAM = DDRAM + 1
-        NEXT I
-
-        ARRAYWRITE LCDOUT2,[$FE,212,"VOL:                "]
-        PROCESA_LCDOUT2 
-
-        AUXTONO = TONO
-        RETURN
-    ENDIF
-
-    ' --- SOLO ACTUALIZA SI CAMBIO EL ADC ---
-    IF AUXTONO <> TONO THEN
-
-        ' --- DEFINICION DE CARACTERES ---
+   ' --- DEFINICION DE CARACTERES ---
         ARRAYWRITE LCDOUT2,[$FE,64 ,0 ,16 ,16 ,16 ,16 ,16 ,16 ,0] : PROCESA_LCDOUT2
         ARRAYWRITE LCDOUT2,[$FE,72 ,0 ,24 ,24 ,24 ,24 ,24 ,24 ,0] : PROCESA_LCDOUT2
         ARRAYWRITE LCDOUT2,[$FE,80 ,0 ,28 ,28 ,28 ,28 ,28 ,28 ,0] : PROCESA_LCDOUT2
         ARRAYWRITE LCDOUT2,[$FE,88 ,0 ,30 ,30 ,30 ,30 ,30 ,30 ,0] : PROCESA_LCDOUT2
         ARRAYWRITE LCDOUT2,[$FE,96 ,0 ,31 ,31 ,31 ,31 ,31 ,31 ,0] : PROCESA_LCDOUT2
-        ARRAYWRITE LCDOUT2,[$FE,104,$12,$1B,$00,$04,$11,$0E,$00,$00] : PROCESA_LCDOUT2
-        ARRAYWRITE LCDOUT2,[$FE,112,$00,$1B,$09,$04,$00,$0E,$11,$00] : PROCESA_LCDOUT2
-        ARRAYWRITE LCDOUT2,[$FE,120,$1F,$0A,$1F,$0A,$1F,$0A,$1F,$15] : PROCESA_LCDOUT2
+          
 
-        AUXTONO = TONO                       
+ 
+ADCIN 6, TONO 
+if tono => 60 then   tono =  0  '60 / 15 segmentos = 4 
 
-        POS_BASE = 216
-        DDRAM = POS_BASE
 
-        ' --- LIMPIAR TODA LA ZONA DE BARRAS ---
-        FOR I = 1 TO 14
-            ARRAYWRITE LCDOUT2,[$FE,DDRAM,20] : PROCESA_LCDOUT2
-            DDRAM = DDRAM + 1
-        NEXT I
+IF AUXTONO  <>  TONO THEN    
+DDRAM = 216
+AUXTONO =  TONO 
 
-        ' --- CALCULAR SEGMENTOS (PROTEGIDO) ---
-        IF TONO < 6 THEN
-            SEG_ACT = 0
-        ELSE
-            SEG_ACT = TONO / 6
-        ENDIF
+IF TONO > 4  THEN             'VALOR MAXIMO ADC 60/ 16 = 10                                              
+FOR CONTADOR = 1 TO (TONO/4)
+ARRAYWRITE LCDOUT2,[$FE,DDRAM,4] : PROCESA_LCDOUT2 
+DDRAM = DDRAM + 1                    
+NEXT CONTADOR    
+ENDIF
 
-        DDRAM = POS_BASE
+ 
 
-        ' --- PINTAR BARRAS LLENAS ---
-        FOR I = 1 TO SEG_ACT
-            ARRAYWRITE LCDOUT2,[$FE,DDRAM,4] : PROCESA_LCDOUT2
-            DDRAM = DDRAM + 1
-        NEXT I
+DATO_ACTUAL = 0
+DATO_ACTUAL = (TONO // 5)
+ARRAYWRITE LCDOUT2,[$FE,DDRAM,DATO_ACTUAL] : PROCESA_LCDOUT2
 
-    ENDIF    
+
+TONO = TONO/4    'DEVUELVE EL RESULTADO DE LADIVISION ---- VALOR ADC 160 / 16 = 10                                                   
+TONO = 15 - TONO  'RESTA EL TOTAL DE LOS SEGMENTOS  MENOS EL VALOR DE VOL / 10 SI VOLT / 10 = 16 - 16 = 0                                                               
+
+ 
+FOR CONTADOR = 1 TO (TONO) step 1  'PINTA EL RESTO DE SEGMENTOS EN BLANCO
+F = 20
+DDRAM = DDRAM + 1 
+ARRAYWRITE LCDOUT2,[$FE,DDRAM,F] : PROCESA_LCDOUT2  
+NEXT CONTADOR  
+ 
+TONO = AUXTONO   'RESTAURA EL VALOR DE TONO                                                            
+ENDIF
+
 
 RETURN
 
+
+
+LCD_MENU_SONIDO_1_5_v:  
+
+
+
+  
+
+  
+
+   ' --- DEFINICION DE CARACTERES ---
+        ARRAYWRITE LCDOUT2,[$FE,64 ,0 ,16 ,16 ,16 ,16 ,16 ,16 ,0] : PROCESA_LCDOUT2
+        ARRAYWRITE LCDOUT2,[$FE,72 ,0 ,24 ,24 ,24 ,24 ,24 ,24 ,0] : PROCESA_LCDOUT2
+        ARRAYWRITE LCDOUT2,[$FE,80 ,0 ,28 ,28 ,28 ,28 ,28 ,28 ,0] : PROCESA_LCDOUT2
+        ARRAYWRITE LCDOUT2,[$FE,88 ,0 ,30 ,30 ,30 ,30 ,30 ,30 ,0] : PROCESA_LCDOUT2
+        ARRAYWRITE LCDOUT2,[$FE,96 ,0 ,31 ,31 ,31 ,31 ,31 ,31 ,0] : PROCESA_LCDOUT2
+          
+
+ 
+ADCIN 6, TONO 
+IF TONO >= 300 THEN TONO = 0   '300 / 15 segmentos = 20
+
+
+IF AUXTONO <> TONO THEN    
+DDRAM = 216
+AUXTONO = TONO
+
+
+'-------------------------------
+' SEGMENTOS COMPLETOS
+'-------------------------------
+IF TONO > 20 THEN                 
+FOR CONTADOR = 1 TO (TONO / 20)
+    ARRAYWRITE LCDOUT2,[$FE,DDRAM,4] : PROCESA_LCDOUT2 
+    DDRAM = DDRAM + 1                    
+NEXT CONTADOR    
+ENDIF
+
+
+'-------------------------------
+' SEGMENTO PARCIAL
+'-------------------------------
+DATO_ACTUAL = (TONO // 20)      '0 a 19
+
+' limitar a 0–4 (5 niveles visuales)
+IF DATO_ACTUAL > 0 THEN
+    DATO_ACTUAL = DATO_ACTUAL / 4
+ENDIF
+
+ARRAYWRITE LCDOUT2,[$FE,DDRAM,DATO_ACTUAL] : PROCESA_LCDOUT2
+
+
+'-------------------------------
+' LIMPIEZA DE SEGMENTOS RESTANTES
+'-------------------------------
+TONO = TONO / 20
+TONO = 15 - TONO
+
+FOR CONTADOR = 1 TO TONO
+    F = 20
+    DDRAM = DDRAM + 1 
+    ARRAYWRITE LCDOUT2,[$FE,DDRAM,F] : PROCESA_LCDOUT2  
+NEXT CONTADOR  
+
+
+TONO = AUXTONO    'restaura valor ADC
+ENDIF
+
+
+
+RETURN
 
 '*******************************************************************************************************
 '*******************************************************************************************************
