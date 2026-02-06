@@ -50,6 +50,7 @@ SYMBOL SONIDO_IN  =  TEMPERATURA_IN
 '*******************************************************************************************************
 '*******************************************************************************************************
 '*******************************************************************************************************
+
 DIRECCION_PCF  CON $4F  
 INCLUDE "REYELECTRONICA_LCD_I2C_V2.pbp"
 OSC_MB CON 640
@@ -132,7 +133,7 @@ MUEVE_CURSOR         VAR BYTE
 '*******************************************************************************************************
 '*******************************************************************************************************
 '*******************************************************************************************************  
-TONO               VAR BYTE
+TONO               VAR WORD
 AUXTONO            VAR word
 CONTADOR           VAR word
 DDRAM              VAR BYTE
@@ -151,14 +152,54 @@ REF_DATO           = 0
 REF_PASO           = 1  
 ALERTA_ROE         = 0
 ALERTA_TEMPERATURA = 0  
+
+
+TONO              = 0 
+AUXTONO            = 0 
+CONTADOR           = 0 
+DDRAM             = 0 
+F                 = 0 
+DATO_ACTUAL      = 0 
 '*******************************************************************************************************
 '*******************************************************************************************************
 '*******************************************************************************************************  
 '*******************************************************************************************************
 '*******************************************************************************************************
 '*******************************************************************************************************
-'pause 1000
+'PAUSE 1500
+
+
+
+'AUXTONO = 0
+'TONO  = 1
+
 INICIO: 
+
+WRITE 00,100
+WRITE 01,1
+'WRITE 02,KHZ 
+WRITE 03,25 
+WRITE 04,80
+WRITE 05,100
+'ADCIN 6, TONO
+
+'IF AUXTONO <> TONO THEN
+
+
+'ARRAYWRITE LCDOUT2,[$FE,1]        
+'PROCESA_LCDOUT2
+'PAUSE 10
+'ARRAYWRITE LCDOUT2,[$FE,128,"ADC:  ",#TONO]        
+'PROCESA_LCDOUT2
+'PAUSE 100
+
+'AUXTONO = TONO
+'ENDIF
+'PAUSE 500
+'if TONO  =>160 then TONO  = 160 
+'GOSUB  LCD_MENU_SONIDO
+'GOTO INICIO
+
 
 
 
@@ -313,14 +354,20 @@ DACCON0  = %10100000'HABILITA Y ACTIVA DAC
 ANTI_REBOTE 
 ENDIF  
 ENDIF  
+
+
 								 
-if CAL_POT = 0 then GOSUB LEE_ADC  
+if CAL_POT = 0 then GOSUB LEE_ADC 
+
 
 IF ROE=> ALERTA_ROE  AND CAL_POT = 0 THEN GOSUB DESACTIVA_POT : GOTO LCD_ALARMA2'END
 IF TEMPERATURA=> ALERTA_TEMPERATURA AND CAL_POT= 0 THEN GOSUB DESACTIVA_POT : GOTO LCD_ALARMA2'END
-								    
-IF EX_RTP  <> ROE + TEMPERATURA + PWO + TONO THEN 
-EX_RTP  = ROE + TEMPERATURA + PWO + TONO
+
+GOSUB LCD_MENU_SONIDO 	
+							    
+IF EX_RTP  <> ROE + TEMPERATURA + PWO THEN 
+EX_RTP  = ROE + TEMPERATURA + PWO
+
 
 
                                            
@@ -328,7 +375,7 @@ FOR SELECTOR_IniSeg = 1 TO 3 STEP 1
 GOSUB LCD_ACTUALIZA  
 NEXT
 
-GOSUB LCD_MENU_SONIDO
+
 
 ANTI_REBOTE
 ENDIF  
@@ -475,7 +522,7 @@ RETURN
 ENDIF 
 														  
 
-WHILE  ACEPTAR = 1 
+WHILE  ACEPTAR = 1                                 
 
 ROTARY
 PAUSE 10   
@@ -839,47 +886,79 @@ ENDIF
 RETURN
 '*******************************************************************************************************
 '*******************************************************************************************************
-LCD_MENU_SONIDO:   
+LCD_MENU_SONIDO:  
 
- 
+SEG_ACT   VAR BYTE   ' Cantidad de segmentos activos según ADC
+POS_BASE  VAR BYTE   ' Posición inicial de la barra de volumen en el LCD
+I  VAR BYTE   ' Contador auxiliar para bucles de limpieza/pintado 
 
-IF AUXTONO <> TONO THEN
-ARRAYWRITE LCDOUT2,[$FE,64 ,0  ,16 ,16 ,16 ,16 ,16 ,16 ,0]      : PROCESA_LCDOUT2
-ARRAYWRITE LCDOUT2,[$FE,72 ,0  ,24 ,24 ,24 ,24 ,24 ,24 ,0]      : PROCESA_LCDOUT2
-ARRAYWRITE LCDOUT2,[$FE,80 ,0  ,28 ,28 ,28 ,28 ,28 ,28 ,0]      : PROCESA_LCDOUT2
-ARRAYWRITE LCDOUT2,[$FE,88 ,0  ,30 ,30 ,30 ,30 ,30 ,30 ,0]      : PROCESA_LCDOUT2
-ARRAYWRITE LCDOUT2,[$FE,96 ,0  ,31 ,31 ,31 ,31 ,31 ,31 ,0]      : PROCESA_LCDOUT2
-ARRAYWRITE LCDOUT2,[$FE,104,$12,$1B,$00,$04,$11,$0E,$00,$00]  : PROCESA_LCDOUT2
-ARRAYWRITE LCDOUT2,[$FE,112,$00,$1B,$09,$04,$00,$0E,$11,$00]  : PROCESA_LCDOUT2
-ARRAYWRITE LCDOUT2,[$FE,120,$1F,$0A,$1F,$0A,$1F,$0A,$1F,$15]  : PROCESA_LCDOUT2
+'LCD_MENU_SONIDO:   
 
-AUXTONO = TONO                       
-DDRAM = 216
+    ADCIN 6, TONO   
 
- 
-IF TONO > 10 THEN             'VALOR MAXIMO ADC 160 / 16 = 10                                                
-FOR CONTADOR = 1 TO (TONO/10)                               
-ARRAYWRITE LCDOUT2,[$FE,DDRAM,4] : PROCESA_LCDOUT2
-DDRAM = DDRAM + 1                    
-NEXT CONTADOR 
-ENDIF
-IF TONO > 2 THEN    
-DATO_ACTUAL  = (TONO // 5)'EL RESULTADO DE ESTA ECUACION VALORES SIEMPRE SON: 4,3,2,1,0 
-ARRAYWRITE LCDOUT2,[$FE,DDRAM,DATO_ACTUAL]    : PROCESA_LCDOUT2
-ENDIF
+    IF TONO >= 60 THEN TONO = 60  
 
-TONO = TONO/10    'DEVUELVE EL RESULTADO DE LADIVISION ---- VALOR ADC 160 / 16 = 10                                                   
-TONO = 16 - TONO  'RESTA EL TOTAL DE LOS SEGMENTOS  MENOS EL VALOR DE VOL / 10 SI VOLT / 10 = 16 - 16 = 0                                                               
+    ' --- BORRADO FORZADO CON VOLUMEN BAJO ---
+    IF TONO <= 2 THEN
+        POS_BASE = 216
+        DDRAM = POS_BASE
 
-FOR CONTADOR = 1 TO (TONO) step 1  'PINTA EL RESTO DE SEGMENTOS EN BLANCO
-F = 20
-DDRAM = DDRAM + 1 
-ARRAYWRITE LCDOUT2,[$FE,DDRAM,F] : PROCESA_LCDOUT2  
-NEXT CONTADOR  
- 
-TONO = AUXTONO                                                                 
-ENDIF  
-                                 RETURN
+        FOR I = 1 TO 14
+            ARRAYWRITE LCDOUT2,[$FE,DDRAM," "] : PROCESA_LCDOUT2
+            DDRAM = DDRAM + 1
+        NEXT I
+
+        ARRAYWRITE LCDOUT2,[$FE,212,"VOL:                "]
+        PROCESA_LCDOUT2 
+
+        AUXTONO = TONO
+        RETURN
+    ENDIF
+
+    ' --- SOLO ACTUALIZA SI CAMBIO EL ADC ---
+    IF AUXTONO <> TONO THEN
+
+        ' --- DEFINICION DE CARACTERES ---
+        ARRAYWRITE LCDOUT2,[$FE,64 ,0 ,16 ,16 ,16 ,16 ,16 ,16 ,0] : PROCESA_LCDOUT2
+        ARRAYWRITE LCDOUT2,[$FE,72 ,0 ,24 ,24 ,24 ,24 ,24 ,24 ,0] : PROCESA_LCDOUT2
+        ARRAYWRITE LCDOUT2,[$FE,80 ,0 ,28 ,28 ,28 ,28 ,28 ,28 ,0] : PROCESA_LCDOUT2
+        ARRAYWRITE LCDOUT2,[$FE,88 ,0 ,30 ,30 ,30 ,30 ,30 ,30 ,0] : PROCESA_LCDOUT2
+        ARRAYWRITE LCDOUT2,[$FE,96 ,0 ,31 ,31 ,31 ,31 ,31 ,31 ,0] : PROCESA_LCDOUT2
+        ARRAYWRITE LCDOUT2,[$FE,104,$12,$1B,$00,$04,$11,$0E,$00,$00] : PROCESA_LCDOUT2
+        ARRAYWRITE LCDOUT2,[$FE,112,$00,$1B,$09,$04,$00,$0E,$11,$00] : PROCESA_LCDOUT2
+        ARRAYWRITE LCDOUT2,[$FE,120,$1F,$0A,$1F,$0A,$1F,$0A,$1F,$15] : PROCESA_LCDOUT2
+
+        AUXTONO = TONO                       
+
+        POS_BASE = 216
+        DDRAM = POS_BASE
+
+        ' --- LIMPIAR TODA LA ZONA DE BARRAS ---
+        FOR I = 1 TO 14
+            ARRAYWRITE LCDOUT2,[$FE,DDRAM,20] : PROCESA_LCDOUT2
+            DDRAM = DDRAM + 1
+        NEXT I
+
+        ' --- CALCULAR SEGMENTOS (PROTEGIDO) ---
+        IF TONO < 6 THEN
+            SEG_ACT = 0
+        ELSE
+            SEG_ACT = TONO / 6
+        ENDIF
+
+        DDRAM = POS_BASE
+
+        ' --- PINTAR BARRAS LLENAS ---
+        FOR I = 1 TO SEG_ACT
+            ARRAYWRITE LCDOUT2,[$FE,DDRAM,4] : PROCESA_LCDOUT2
+            DDRAM = DDRAM + 1
+        NEXT I
+
+    ENDIF    
+
+RETURN
+
+
 '*******************************************************************************************************
 '*******************************************************************************************************
 SOUND_ALARMA:                            
@@ -919,6 +998,8 @@ LCD_LED = 0 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
 PWM BUZZER, 127, 80
 PAUSE 300
 LCD_LED = 1 : ARRAYWRITE LCDOUT2,[$FE,$0C]:PROCESA_LCDOUT2
+BUZZER = 0
+PAUSE 10
 '=============================================================
 
 RETURN
@@ -928,7 +1009,7 @@ LEE_ADC:
 
 
 owout TEMPERATURA_IN ,1,[$CC,$44]
-pause 760
+pause 10
 owout TEMPERATURA_IN ,1,[$CC,$BE]
 owIN  TEMPERATURA_IN ,0, [STR TEMPERATURA\9]
 TEMPERATURA =  TEMPERATURA[0] >> 4 | TEMPERATURA[1] << 4 
@@ -938,8 +1019,7 @@ IF TEMPERATURA = 85 THEN TEMPERATURA = 0 'CUANDO LEE VALOR DESPUES DE UN RESET D
 
 
 'TRISC.2  = 1  : ANSELC.2 = 1
-ADCIN 6, TONO
-if TONO  =>160 then TONO  = 160 
+
 'TRISC.2  = 0  : ANSELC.2 = 0
 
 

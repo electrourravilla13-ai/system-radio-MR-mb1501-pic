@@ -134,35 +134,17 @@ ADD?WWW macro Win1, Win2, Wout
     endif
     endm
 
-DIV?BCB macro Bin, Cin, Bout
+DIV?WCB macro Win, Cin, Bout
     if ((Cin) == 2)
-      if ((Bout) == (Bin))
-        CHK?RP  Bout
-        lsrf    Bout, F
-      else
-        CHK?RP  Bin
-        lsrf    Bin, W
+        CHK?RP  Win
+        rrf     (Win) + 1, W
+        rrf     Win, W
         MOVE?AB Bout
-      endif
     else
-        MOVE?BW Bin, R0
+        MOVE?WW Win, R0
         MOVE?CW Cin, R1
         L?CALL  DIV
         MOVE?AB Bout
-    endif
-    endm
-DIV_USED = 1
-
-DIV?BCW macro Bin, Cin, Wout
-    if ((Cin) == 2)
-        CHK?RP  Bin
-        lsrf    Bin, W
-        MOVE?AW Wout
-    else
-        MOVE?BW Bin, R0
-        MOVE?CW Cin, R1
-        L?CALL  DIV
-        MOVE?AWW R0, Wout
     endif
     endm
 DIV_USED = 1
@@ -187,14 +169,6 @@ DIV?WCW macro Win, Cin, Wout
         L?CALL  DIV
         MOVE?AWW R0, Wout
     endif
-    endm
-DIV_USED = 1
-
-MOD?BCW macro Bin, Cin, Wout
-        MOVE?BW Bin, R0
-        MOVE?CW Cin, R1
-        L?CALL  DIV
-        MOVE?WW R2, Wout
     endm
 DIV_USED = 1
 
@@ -238,12 +212,6 @@ SUB?BCW macro Bin, Cin, Wout
         MOVE?AW Wout
         movlw   (Cin) >> 8
         subwfb	(Wout) + 1, F
-    endm
-
-SUB?CBB macro Cin, Bin, Bout
-        MOVE?BA Bin
-        sublw   Cin
-        MOVE?AB Bout
     endm
 
 SUB?WBW macro Win, Bin, Wout
@@ -434,14 +402,6 @@ CMPEQ?BWL macro Bin, Win, Label
     endm
 CMPEQW_USED = 1
 
-CMPEQ?WBL macro Win, Bin, Label
-        MOVE?WW Win, R0
-        MOVE?BA Bin
-        L?CALL  CMPEQW
-        BIT?GOTO 0, STATUS, Z, Label
-    endm
-CMPEQW_USED = 1
-
 CMPEQ?WWL macro Win1, Win2, Label
         MOVE?WW Win1, R0
         MOVE?WWA Win2, R1
@@ -530,13 +490,20 @@ CMPGT?BCL macro Bin, Cin, Label
     endif
     endm
 
-CMPGT?WBL macro Win, Bin, Label
+CMPGT?WCL macro Win, Cin, Label
+    if ((Cin) < 0)
+        L?GOTO  Label
+    else
+      if ((Cin) < 0ffffh)
         MOVE?WW Win, R0
-        MOVE?BA Bin
-        L?CALL  CMPGTW
+        MOVE?CB (Cin) >> 8, R1 + 1
+        MOVE?CA low (Cin)
+        L?CALL  CMPGT
         BIT?GOTO 0, STATUS, Z, Label
+      endif
+    endif
     endm
-CMPGTW_USED = 1
+CMPGT_USED = 1
 
 CMPGT?WWL macro Win1, Win2, Label
         MOVE?WW Win1, R0
@@ -553,20 +520,6 @@ CMPLE?WWB macro Win1, Win2, Bout
         MOVE?AB Bout
     endm
 CMPLE_USED = 1
-
-CMPLE?BCL macro Bin, Cin, Label
-    if ((Cin) >= 0ffh)
-        L?GOTO  Label
-    else
-      if ((Cin) >= 0)
-        CLRWDT?
-        MOVE?CA (Cin) + 1
-        CHK?RP  Bin
-        subwf   Bin, W
-        BIT?GOTO 0, STATUS, C, Label
-      endif
-    endif
-    endm
 
 CMPLT?WCB macro Win, Cin, Bout
     if ((Cin) >= 10000h)
@@ -593,20 +546,6 @@ CMPLT?BBL macro Bin1, Bin2, Label
         CHK?RP  Bin1
         subwf   Bin1, W
         BIT?GOTO 0, STATUS, C, Label
-    endm
-
-CMPLT?BCL macro Bin, Cin, Label
-    if ((Cin) >= 100h)
-        L?GOTO  Label
-    else
-      if ((Cin) > 0)
-        CLRWDT?
-        MOVE?CA Cin
-        CHK?RP  Bin
-        subwf   Bin, W
-        BIT?GOTO 0, STATUS, C, Label
-      endif
-    endif
     endm
 
 CMPLT?WBL macro Win, Bin, Label
@@ -736,13 +675,6 @@ SHIFTR?WCW macro Win, Cin, Wout
     endif
     endm
 SHIFTR_USED = 1
-
-ADCIN?CB macro Cin, Bout
-        movlw   Cin
-        L?CALL  ADCIN
-        MOVE?AB Bout
-    endm
-ADCIN_USED = 1
 
 ADCIN?CW macro Cin, Wout
         movlw   Cin
@@ -903,45 +835,6 @@ NEXT?BCL macro Bin, Cin, Label
     endif
     endm
 
-NEXT?WCL macro Win, Cin, Label
-    if ((Cin) == 1)
-        CHK?RP  Win
-        incf    Win, F
-        btfsc   STATUS, Z
-      if ((PREV_BANK == 0) & (CODE_SIZE <= 2))
-        incfsz  Win + 1, F
-        goto    Label
-      else
-        incf    Win + 1, F
-        BIT?GOTO 0, STATUS, Z, Label
-      endif
-    else
-      if ((Cin) <= 255)
-        MOVE?CA Cin
-        CHK?RP  Win
-        addwf   Win, F
-        BIT?GOTO 0, STATUS, C, Label
-        CHK?RP  Win
-        if ((PREV_BANK == 0) & (CODE_SIZE <= 2))
-        incfsz  Win + 1, F
-        goto    Label
-        else
-        incf    Win + 1, F
-        BIT?GOTO 0, STATUS, Z, Label
-        endif
-      else
-        movlw   low (Cin)
-        CHK?RP  Win
-        addwf   Win, F
-        movlw   (Cin) >> 8
-        addwfc  (Win) + 1, F
-          if ((Cin) <= 65535)
-        BIT?GOTO 0, STATUS, C, Label
-          endif
-      endif
-    endif
-    endm
-
 OWPIN?T macro Regin, Bitin
         BIT?R1  Regin, Bitin
     endm
@@ -1083,6 +976,12 @@ WRITEADDRESS?C macro Cin
 
 WRITE?B macro Bin
         MOVE?BA Bin
+        L?CALL  WRITE
+    endm
+WRITE_USED = 1
+
+WRITE?C macro Cin
+        movlw   Cin
         L?CALL  WRITE
     endm
 WRITE_USED = 1
